@@ -1,0 +1,264 @@
+substitutions:
+  name: apollo-esk-1
+  version: "25.1.29.1"
+  device_description: ${name} made by Apollo Automation - version ${version}.
+
+esphome:
+  name: "${name}"
+  friendly_name: Apollo ESK-1
+  comment: Apollo ESK-1 Starter Kit
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+
+  project:
+    name: "ApolloAutomation.ESK-1"
+    version: "${version}"
+
+  min_version: 2023.11.1
+
+  on_shutdown:
+    - light.turn_off: rgb_light
+    - switch.turn_off: accessory_power
+
+  on_boot:
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: rgb_light
+            brightness: 100%
+            red: 100%
+            green: 0%
+            blue: 0%
+        - delay: 2s
+        - script.execute: update_battery_led
+    - priority: 500
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+        - if:
+            condition:
+              or:
+                - binary_sensor.is_on: ota_mode
+                - switch.is_on: prevent_sleep
+            then:
+              - lambda: |-
+                  ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                  id(deep_sleep_1).prevent_deep_sleep();
+
+esp32:
+  board: esp32-c6-devkitm-1
+  variant: esp32c6
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: github://ApolloAutomation/esphome-battery-component
+    components: [max17048]
+
+api:
+  id: api_server
+  reboot_timeout: 0s
+  on_client_connected:
+    then:
+      - delay: 5s
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: ota_mode
+              - switch.is_on: prevent_sleep
+          then:
+            - lambda: |-
+                ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
+                id(deep_sleep_1).prevent_deep_sleep();
+          else:
+            - lambda: |-
+                id(reportAllValues).execute();
+            - delay: 2s
+            - deep_sleep.enter:
+                id: deep_sleep_1
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+
+wifi:
+  ap:
+    ssid: "Apollo ESK-1 Hotspot"
+
+logger:
+
+captive_portal:
+
+i2c:
+  id: i2c_bus
+  sda: GPIO21
+  scl: GPIO20
+
+deep_sleep:
+  id: deep_sleep_1
+  sleep_duration: 24h
+  run_duration: 90s
+
+number:
+  - platform: template
+    name: "Sleep Duration"
+    id: deep_sleep_sleep_duration
+    min_value: 0
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 24
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "h"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 60 * 1000);
+
+binary_sensor:
+  - platform: status
+    name: Online
+    id: ink_ha_connected
+
+  - platform: homeassistant
+    name: "OTA Mode"
+    id: ota_mode
+    entity_id: input_boolean.apollo_ota_mode
+    on_press:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_release:
+      then:
+        - if:
+            condition:
+              switch.is_off: prevent_sleep
+            then:
+              - lambda: |-
+                  id(deep_sleep_1).allow_deep_sleep();
+
+sensor:
+  - platform: internal_temperature
+    name: "ESP Temperature"
+    id: sys_esp_temperature
+    disabled_by_default: true
+
+  - platform: uptime
+    name: Uptime
+    id: sys_uptime
+    update_interval: 60s
+
+  - platform: wifi_signal
+    name: RSSI
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: max17048
+    id: max_17048
+    battery_voltage:
+      name: Battery Voltage
+      id: batt_v
+    battery_level:
+      name: Battery Level
+      id: batt_pct
+      filters:
+        - lambda: |
+            if (x > 100) return 100;
+            else return (x);
+      on_value:
+        then:
+          - script.execute: update_battery_led
+
+switch:
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_turn_off:
+      then:
+        - if:
+            condition:
+              binary_sensor.is_off: ota_mode
+            then:
+              - lambda: |-
+                  id(deep_sleep_1).allow_deep_sleep();
+
+  - platform: factory_reset
+    id: factory_reset_switch
+    disabled_by_default: true
+
+  - platform: gpio
+    pin: GPIO4
+    name: "Accessory Power"
+    id: accessory_power
+    restore_mode: ALWAYS_ON
+    internal: true
+
+button:
+  - platform: restart
+    icon: mdi:power-cycle
+    name: "ESP Reboot"
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: rgb_light
+    name: "RGB Light"
+    pin: GPIO5
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 1
+    rmt_symbols: 48
+    rgb_order: grb
+
+script:
+  - id: reportAllValues
+    then:
+      - component.update: wifi_signal_db
+      - component.update: sys_esp_temperature
+      - component.update: sys_uptime
+      - component.update: max_17048
+
+  - id: update_battery_led
+    then:
+      - if:
+          condition:
+            lambda: 'return id(batt_pct).state >= 80;'
+          then:
+            - light.turn_on:
+                id: rgb_light
+                brightness: 50%
+                red: 0%
+                green: 100%
+                blue: 0%
+          else:
+            - if:
+                condition:
+                  lambda: 'return id(batt_pct).state >= 40;'
+                then:
+                  - light.turn_on:
+                      id: rgb_light
+                      brightness: 50%
+                      red: 100%
+                      green: 100%
+                      blue: 0%
+                else:
+                  - light.turn_on:
+                      id: rgb_light
+                      brightness: 50%
+                      red: 100%
+                      green: 0%
+                      blue: 0%
