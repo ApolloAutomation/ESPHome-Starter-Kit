@@ -14,8 +14,7 @@ jobs:
     strategy:
       matrix:
         file: # TODO: Rename
-          - Integrations/ESPHome/PLT-1.yaml
-          - Integrations/ESPHome/PLT-1_BLE.yaml
+          - Integrations/ESPHome/ESK-1.yaml
         esphome-version:
           - stable
           - beta
