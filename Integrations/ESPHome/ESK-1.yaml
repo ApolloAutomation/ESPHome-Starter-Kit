@@ -22,16 +22,6 @@ esphome:
     - switch.turn_off: accessory_power
 
   on_boot:
-    - priority: 600
-      then:
-        - light.turn_on:
-            id: rgb_light
-            brightness: 100%
-            red: 100%
-            green: 0%
-            blue: 0%
-        - delay: 2s
-        - script.execute: update_battery_led
     - priority: 500
       then:
         - lambda: |-
@@ -53,9 +43,9 @@ esp32:
   framework:
     type: esp-idf
 
-external_components:
-  - source: github://ApolloAutomation/esphome-battery-component
-    components: [max17048]
+#external_components:
+#  - source: github://ApolloAutomation/esphome-battery-component
+#    components: [max17048]
 
 api:
   id: api_server
@@ -79,6 +69,28 @@ api:
             - deep_sleep.enter:
                 id: deep_sleep_1
 
+#########
+######### Buzzer Module Start
+#########
+  services:
+    - service: play_buzzer
+      variables:
+        song_str: string
+      then:
+        - rtttl.play:
+            rtttl: !lambda 'return song_str;'
+
+output:
+  - platform: ledc
+    pin: GPIO18
+    id: buzzer
+rtttl:
+  id: rtttl_buzzer
+  output: buzzer
+#########
+######### Buzzer Module End
+#########
+
 ota:
   - platform: esphome
     id: ota_esphome
@@ -92,9 +104,13 @@ logger:
 captive_portal:
 
 i2c:
-  id: i2c_bus
-  sda: GPIO21
-  scl: GPIO20
+  #- id: i2c_bus_1
+  #  sda: GPIO21
+  #  scl: GPIO20
+  - id: i2c_bus_2
+    sda: GPIO1
+    scl: GPIO0
+
 
 deep_sleep:
   id: deep_sleep_1
@@ -142,6 +158,44 @@ binary_sensor:
             then:
               - lambda: |-
                   id(deep_sleep_1).allow_deep_sleep();
+#########
+######### PIR Module Start
+#########
+
+  - platform: gpio
+    name: "PIR"
+    pin:
+      number: GPIO3
+      mode:
+        input: true
+        pulldown: false
+    id: io_pir
+    device_class: motion
+
+#########
+######### PIR Module End
+#########
+
+#########
+######### Button Module Start
+#########
+
+  -   platform: gpio
+      id: button_1
+      name: "Button 1"
+      pin:
+        number: GPIO6
+        mode:
+          input: true
+          pullup: true
+        inverted: true
+      on_press:
+        then:
+          - logger.log: "Button 1 pressed"
+
+#########
+######### Button Module End
+#########
 
 sensor:
   - platform: internal_temperature
@@ -160,21 +214,36 @@ sensor:
     update_interval: 60s
     entity_category: "diagnostic"
 
-  - platform: max17048
-    id: max_17048
-    battery_voltage:
-      name: Battery Voltage
-      id: batt_v
-    battery_level:
-      name: Battery Level
-      id: batt_pct
-      filters:
-        - lambda: |
-            if (x > 100) return 100;
-            else return (x);
-      on_value:
-        then:
-          - script.execute: update_battery_led
+#########
+######### AHT Module Start
+#########
+  - platform: aht10
+    variant: AHT20
+    id: aht_20
+    temperature:
+      name: "Temperature"
+      id: aht_temperature
+    humidity:
+      name: "Humidity"
+      id: aht_humidity
+    update_interval: 60s
+
+#########
+######### AHT Module End
+#########
+
+  #- platform: max17048
+  #  id: max_17048
+  #  battery_voltage:
+  #    name: Battery Voltage
+  #    id: batt_v
+  #  battery_level:
+  #    name: Battery Level
+  #    id: batt_pct
+  #    filters:
+  #      - lambda: |
+  #          if (x > 100) return 100;
+  #          else return (x);
 
 switch:
   - platform: template
@@ -206,6 +275,8 @@ switch:
     name: "Accessory Power"
     id: accessory_power
     restore_mode: ALWAYS_ON
+    setup_priority: 2000
+
     internal: true
 
 button:
@@ -216,7 +287,7 @@ button:
 light:
   - platform: esp32_rmt_led_strip
     id: rgb_light
-    name: "RGB Light"
+    name: "RGB Board Light"
     pin: GPIO5
     default_transition_length: 0s
     chipset: WS2812
@@ -224,41 +295,29 @@ light:
     rmt_symbols: 48
     rgb_order: grb
 
+#########
+######### LED Module Start
+#########
+  - platform: esp32_rmt_led_strip
+    id: rgb_module
+    name: "RGB Module Light"
+    pin: GPIO14
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 10
+    rmt_symbols: 48
+    rgb_order: grb
+
+#########
+######### LED Module End
+#########
+
+
+
 script:
   - id: reportAllValues
     then:
       - component.update: wifi_signal_db
       - component.update: sys_esp_temperature
       - component.update: sys_uptime
-      - component.update: max_17048
-
-  - id: update_battery_led
-    then:
-      - if:
-          condition:
-            lambda: 'return id(batt_pct).state >= 80;'
-          then:
-            - light.turn_on:
-                id: rgb_light
-                brightness: 50%
-                red: 0%
-                green: 100%
-                blue: 0%
-          else:
-            - if:
-                condition:
-                  lambda: 'return id(batt_pct).state >= 40;'
-                then:
-                  - light.turn_on:
-                      id: rgb_light
-                      brightness: 50%
-                      red: 100%
-                      green: 100%
-                      blue: 0%
-                else:
-                  - light.turn_on:
-                      id: rgb_light
-                      brightness: 50%
-                      red: 100%
-                      green: 0%
-                      blue: 0%
+      #- component.update: max_17048
