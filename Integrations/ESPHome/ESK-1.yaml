@@ -43,9 +43,9 @@ esp32:
   framework:
     type: esp-idf
 
-#external_components:
-#  - source: github://ApolloAutomation/esphome-battery-component
-#    components: [max17048]
+external_components:
+  - source: github://ApolloAutomation/esphome-battery-component
+    components: [max17048]
 
 api:
   id: api_server
@@ -111,6 +111,12 @@ i2c:
     sda: GPIO1
     scl: GPIO0
 
+
+one_wire:
+  - platform: gpio
+    id: one_wire_bus
+    pin:
+      number: GPIO7
 
 deep_sleep:
   id: deep_sleep_1
@@ -232,18 +238,124 @@ sensor:
 ######### AHT Module End
 #########
 
-  #- platform: max17048
-  #  id: max_17048
-  #  battery_voltage:
-  #    name: Battery Voltage
-  #    id: batt_v
-  #  battery_level:
-  #    name: Battery Level
-  #    id: batt_pct
-  #    filters:
-  #      - lambda: |
-  #          if (x > 100) return 100;
-  #          else return (x);
+#########
+######### SHT20 Module Start
+#########
+  - platform: htu21d
+    id: sht20
+    temperature:
+      name: "SHT20 Temperature"
+      id: sht20_temperature
+    humidity:
+      name: "SHT20 Humidity"
+      id: sht20_humidity
+    update_interval: 60s
+    i2c_id: i2c_bus_2
+#########
+######### SHT20 Module End
+#########
+
+#########
+######### SEN55 Module Start
+#########
+  - platform: sen5x
+    id: sen55
+    pm_1_0:
+      name: "PM <1µm Weight Concentration"
+      id: pm_1_0
+      accuracy_decimals: 1
+    pm_2_5:
+      name: "PM <2.5µm Weight Concentration"
+      id: pm_2_5
+      accuracy_decimals: 1
+    pm_4_0:
+      name: "PM <4µm Weight Concentration"
+      id: pm_4_0
+      accuracy_decimals: 1
+    pm_10_0:
+      name: "PM <10µm Weight Concentration"
+      id: pm_10_0
+      accuracy_decimals: 1
+    temperature:
+      name: "SEN55 Temperature"
+      id: sen55_temperature
+      accuracy_decimals: 1
+    humidity:
+      name: "SEN55 Humidity"
+      id: sen55_humidity
+      accuracy_decimals: 1
+    voc:
+      name: "SEN55 VOC"
+      id: sen55_voc
+    nox:
+      name: "SEN55 NOX"
+      id: sen55_nox
+    acceleration_mode: low
+    store_baseline: true
+    address: 0x69
+    update_interval: 10s
+    i2c_id: i2c_bus_2
+#########
+######### SEN55 Module End
+#########
+
+#########
+######### BMI160 Module Start
+#########
+  - platform: bmi160
+    id: bmi160_imu
+    address: 0x68
+    i2c_id: i2c_bus_2
+    update_interval: 60s
+    acceleration_x:
+      name: "Acceleration X"
+      id: accel_x
+    acceleration_y:
+      name: "Acceleration Y"
+      id: accel_y
+    acceleration_z:
+      name: "Acceleration Z"
+      id: accel_z
+    gyroscope_x:
+      name: "Gyroscope X"
+      id: gyro_x
+    gyroscope_y:
+      name: "Gyroscope Y"
+      id: gyro_y
+    gyroscope_z:
+      name: "Gyroscope Z"
+      id: gyro_z
+    temperature:
+      name: "BMI160 Temperature"
+      id: bmi160_temperature
+#########
+######### BMI160 Module End
+#########
+
+#########
+######### Dallas Probe Module Start
+#########
+  - platform: dallas_temp
+    name: "Temperature Probe"
+    id: temp_probe
+    one_wire_id: one_wire_bus
+    update_interval: 60s
+#########
+######### Dallas Probe Module End
+#########
+
+  - platform: max17048
+    id: max_17048
+    battery_voltage:
+      name: Battery Voltage
+      id: batt_v
+    battery_level:
+      name: Battery Level
+      id: batt_pct
+      filters:
+        - lambda: |
+            if (x > 100) return 100;
+            else return (x);
 
 switch:
   - platform: template
@@ -320,4 +432,8 @@ script:
       - component.update: wifi_signal_db
       - component.update: sys_esp_temperature
       - component.update: sys_uptime
-      #- component.update: max_17048
+      - component.update: sht20
+      - component.update: sen55
+      - component.update: bmi160_imu
+      - component.update: temp_probe
+      - component.update: max_17048
