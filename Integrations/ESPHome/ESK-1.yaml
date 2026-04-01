@@ -114,9 +114,7 @@ i2c:
 
 one_wire:
   - platform: gpio
-    id: one_wire_bus
-    pin:
-      number: GPIO7
+    pin: GPIO6
 
 deep_sleep:
   id: deep_sleep_1
@@ -186,18 +184,18 @@ binary_sensor:
 ######### Button Module Start
 #########
 
-  -   platform: gpio
-      id: button_1
-      name: "Button 1"
-      pin:
-        number: GPIO6
-        mode:
-          input: true
-          pullup: true
-        inverted: true
-      on_press:
-        then:
-          - logger.log: "Button 1 pressed"
+#  -   platform: gpio
+#      id: button_1
+#      name: "Button 1"
+#      pin:
+#        number: GPIO6
+#        mode:
+#          input: true
+#          pullup: true
+#        inverted: true
+#      on_press:
+#        then:
+#          - logger.log: "Button 1 pressed"
 
 #########
 ######### Button Module End
@@ -239,20 +237,20 @@ sensor:
 #########
 
 #########
-######### SHT20 Module Start
+######### SHT30 Module Start
 #########
-  - platform: htu21d
-    id: sht20
+  - platform: sht3xd
+    id: sht30
     temperature:
-      name: "SHT20 Temperature"
-      id: sht20_temperature
+      name: "SHT Temperature"
+      id: sht_temperature
     humidity:
-      name: "SHT20 Humidity"
-      id: sht20_humidity
+      name: "SHT Relative Humidity"
+      id: sht_humidity
     update_interval: 60s
     i2c_id: i2c_bus_2
 #########
-######### SHT20 Module End
+######### SHT30 Module End
 #########
 
 #########
@@ -333,12 +331,34 @@ sensor:
 #########
 
 #########
+######### MiCS Module Start
+#########
+  - platform: mics_4514
+    id: mics4514
+    nitrogen_dioxide:
+      name: Nitrogen Dioxide
+    carbon_monoxide:
+      name: Carbon Monoxide
+    hydrogen:
+      name: Hydrogen
+    ethanol:
+      name: Ethanol
+    methane:
+      name: Methane
+    ammonia:
+      name: Ammonia
+    update_interval: 10s
+    i2c_id: i2c_bus_2
+#########
+######### MiCS Module End
+#########
+
+#########
 ######### Dallas Probe Module Start
 #########
   - platform: dallas_temp
     name: "Temperature Probe"
     id: temp_probe
-    one_wire_id: one_wire_bus
     update_interval: 60s
 #########
 ######### Dallas Probe Module End
@@ -432,8 +452,9 @@ script:
       - component.update: wifi_signal_db
       - component.update: sys_esp_temperature
       - component.update: sys_uptime
-      - component.update: sht20
+      - component.update: sht30
       - component.update: sen55
+      - component.update: mics4514
       - component.update: bmi160_imu
       - component.update: temp_probe
       - component.update: max_17048
