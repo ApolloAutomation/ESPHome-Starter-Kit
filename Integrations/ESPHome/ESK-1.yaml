@@ -36,6 +36,16 @@ esphome:
                   ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
                   id(deep_sleep_1).prevent_deep_sleep();
 
+globals:
+  - id: songCycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: motionColorIndex
+    type: int
+    restore_value: no
+    initial_value: '0'
+
 esp32:
   board: esp32-c6-devkitm-1
   variant: esp32c6
@@ -101,6 +111,10 @@ wifi:
 
 logger:
 
+web_server:
+  port: 80
+  version: 3
+
 captive_portal:
 
 i2c:
@@ -110,11 +124,12 @@ i2c:
   - id: i2c_bus_2
     sda: GPIO1
     scl: GPIO0
+    scan: true
 
 
-one_wire:
-  - platform: gpio
-    pin: GPIO6
+# one_wire:
+#   - platform: gpio
+#     pin: GPIO6
 
 deep_sleep:
   id: deep_sleep_1
@@ -175,6 +190,12 @@ binary_sensor:
         pulldown: false
     id: io_pir
     device_class: motion
+    on_press:
+      then:
+        - script.execute: motionColor
+    on_release:
+      then:
+        - script.execute: startThermometer
 
 #########
 ######### PIR Module End
@@ -184,21 +205,71 @@ binary_sensor:
 ######### Button Module Start
 #########
 
-#  -   platform: gpio
-#      id: button_1
-#      name: "Button 1"
-#      pin:
-#        number: GPIO6
-#        mode:
-#          input: true
-#          pullup: true
-#        inverted: true
-#      on_press:
-#        then:
-#          - logger.log: "Button 1 pressed"
+  - platform: gpio
+    id: button_1
+    name: "Button 1"
+    pin:
+      number: GPIO6
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      then:
+        - script.stop: song0
+        - script.stop: song1
+        - script.stop: song2
+        - script.stop: song3
+        - script.stop: song4
+        - script.stop: song5
+        - script.execute: playSongCycle
 
 #########
 ######### Button Module End
+#########
+
+#########
+######### Boot Button Module Start
+#########
+
+  - platform: gpio
+    pin:
+      number: GPIO9
+      inverted: true
+      ignore_strapping_warning: true
+      mode:
+        input: true
+        pullup: true
+    id: reset_button
+    on_multi_click:
+      - timing:
+          - ON for at least 8s
+        then:
+          - switch.turn_on: factory_reset_switch
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 0.4s
+          - ON for at most 1s
+          - OFF for at most 0.4s
+          - ON for at most 1s
+          - OFF for at least 0.2s
+        then:
+          - script.execute: rainbowCircle
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 0.4s
+          - ON for at most 1s
+          - OFF for at least 0.2s
+        then:
+          - script.execute: startThermometer
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.5s
+        then:
+          - script.execute: statusCheck
+
+#########
+######### Boot Button Module End
 #########
 
 sensor:
@@ -230,7 +301,7 @@ sensor:
     humidity:
       name: "Humidity"
       id: aht_humidity
-    update_interval: 60s
+    update_interval: 1s
 
 #########
 ######### AHT Module End
@@ -239,18 +310,36 @@ sensor:
 #########
 ######### SHT30 Module Start
 #########
-  - platform: sht3xd
-    id: sht30
-    temperature:
-      name: "SHT Temperature"
-      id: sht_temperature
-    humidity:
-      name: "SHT Relative Humidity"
-      id: sht_humidity
-    update_interval: 60s
-    i2c_id: i2c_bus_2
+  # - platform: sht3xd
+  #  id: sht30
+  #  temperature:
+  #    name: "SHT Temperature"
+  #    id: sht_temperature
+  #  humidity:
+  #    name: "SHT Relative Humidity"
+  #    id: sht_humidity
+  #  update_interval: 60s
+  #  i2c_id: i2c_bus_2
 #########
 ######### SHT30 Module End
+#########
+
+#########
+######### SHT41 Module Start
+#########
+  - platform: sht4x
+    id: sht41
+    temperature:
+      name: "SHT41 Temperature"
+      id: sht41_temperature
+    humidity:
+      name: "SHT41 Relative Humidity"
+      id: sht41_humidity
+    update_interval: 60s
+    address: 0x44
+    i2c_id: i2c_bus_2
+#########
+######### SHT41 Module End
 #########
 
 #########
@@ -356,10 +445,10 @@ sensor:
 #########
 ######### Dallas Probe Module Start
 #########
-  - platform: dallas_temp
-    name: "Temperature Probe"
-    id: temp_probe
-    update_interval: 60s
+#  - platform: dallas_temp
+#    name: "Temperature Probe"
+#    id: temp_probe
+#    update_interval: 60s
 #########
 ######### Dallas Probe Module End
 #########
@@ -400,7 +489,7 @@ switch:
 
   - platform: factory_reset
     id: factory_reset_switch
-    disabled_by_default: true
+    internal: true
 
   - platform: gpio
     pin: GPIO4
@@ -408,7 +497,6 @@ switch:
     id: accessory_power
     restore_mode: ALWAYS_ON
     setup_priority: 2000
-
     internal: true
 
 button:
@@ -439,6 +527,121 @@ light:
     num_leds: 10
     rmt_symbols: 48
     rgb_order: grb
+    effects:
+      - addressable_lambda:
+          name: "Thermometer"
+          update_interval: 200ms
+          lambda: |-
+            float temp = id(aht_temperature).state;
+            if (isnan(temp)) return;
+
+            static float last_ratio = -1.0;
+            float min_temp = 21.0;
+            float max_temp = 27.0;
+            float ratio = (temp - min_temp) / (max_temp - min_temp);
+            if (ratio < 0) ratio = 0;
+            if (ratio > 1) ratio = 1;
+
+            // Only redraw if ratio changed
+            if (abs(ratio - last_ratio) < 0.01 && last_ratio >= 0) return;
+            last_ratio = ratio;
+
+            // How many LEDs to light (0-10)
+            float fill = ratio * 10.0;
+
+            for (int i = 0; i < 10; i++) {
+              if (i < (int)fill) {
+                float pos = (float)i / 9.0;
+                uint8_t r, g, b;
+                if (pos < 0.25) {
+                  float t = pos / 0.25;
+                  r = 0; g = (uint8_t)(255 * t); b = 255;
+                } else if (pos < 0.5) {
+                  float t = (pos - 0.25) / 0.25;
+                  r = 0; g = 255; b = (uint8_t)(255 * (1 - t));
+                } else if (pos < 0.75) {
+                  float t = (pos - 0.5) / 0.25;
+                  r = (uint8_t)(255 * t); g = 255; b = 0;
+                } else {
+                  float t = (pos - 0.75) / 0.25;
+                  r = 255; g = (uint8_t)(255 * (1 - t)); b = 0;
+                }
+                it[i] = Color(r, g, b);
+              } else {
+                it[i] = Color(0, 0, 0);
+              }
+            }
+      - addressable_rainbow:
+          name: "Rainbow Circle"
+          speed: 30
+          width: 10
+      - addressable_color_wipe:
+          name: "Rickroll"
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 50%
+              num_leds: 3
+            - red: 80%
+              green: 0%
+              blue: 80%
+              num_leds: 3
+            - red: 100%
+              green: 30%
+              blue: 0%
+              num_leds: 2
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 2
+          add_led_interval: 100ms
+          reverse: false
+      - addressable_color_wipe:
+          name: "Mario"
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 5
+            - red: 0%
+              green: 0%
+              blue: 100%
+              num_leds: 5
+          add_led_interval: 100ms
+          reverse: false
+      - addressable_twinkle:
+          name: "Cantina"
+          twinkle_probability: 45%
+          progress_interval: 15ms
+      - addressable_random_twinkle:
+          name: "Scatman"
+          twinkle_probability: 70%
+          progress_interval: 10ms
+      - addressable_flicker:
+          name: "Imperial March"
+          intensity: 30%
+          update_interval: 50ms
+      - addressable_color_wipe:
+          name: "Take On Me"
+          colors:
+            - red: 0%
+              green: 50%
+              blue: 100%
+              num_leds: 3
+            - red: 60%
+              green: 0%
+              blue: 100%
+              num_leds: 3
+            - red: 100%
+              green: 0%
+              blue: 60%
+              num_leds: 2
+            - red: 0%
+              green: 80%
+              blue: 100%
+              num_leds: 2
+          add_led_interval: 80ms
+          reverse: false
 
 #########
 ######### LED Module End
@@ -447,14 +650,196 @@ light:
 
 
 script:
+  - id: playSongCycle
+    mode: restart
+    then:
+      - light.turn_off: rgb_module
+      - lambda: |-
+          // Stop any currently playing song
+          id(rtttl_buzzer).stop();
+      - delay: 100ms
+      - lambda: |-
+          int song = id(songCycleCounter) % 6;
+          id(songCycleCounter)++;
+          switch(song) {
+            case 0: id(song0).execute(); break;
+            case 1: id(song1).execute(); break;
+            case 2: id(song2).execute(); break;
+            case 3: id(song3).execute(); break;
+            case 4: id(song4).execute(); break;
+            case 5: id(song5).execute(); break;
+          }
+
+  - id: song0
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          effect: "Rickroll"
+      - rtttl.play:
+          rtttl: "GiveYouUp:d=4,o=5,b=200:8g,8a,8c6,8a,e6,8p,e6,8p,d.6,p,8p,8g,8a,8c6,8a,d6,8p,d6,8p,c6,8b,a.,8g,8a,8c6,8a,2c6,d6,b,a,g.,8p,g,2d6,2c.6,p,8g,8a,8c6,8a,e6,8p,e6,8p,d.6,p,8p,8g,8a,8c6,8a,2g6,b,c.6,8b,a,8g,8a,8c6,8a,2c6,d6,b,a,g.,8p,g,2d6,2c.6"
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: song1
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          effect: "Mario"
+      - rtttl.play:
+          rtttl: "Mario:d=4,o=5,b=100:16e6,16e6,32p,8e6,16c6,8e6,8g6,8p,8g,8p,8c6,16p,8g,16p,8e,16p,8a,8b,16a#,8a,16g.,16e6,16g6,8a6,16f6,8g6,8e6,16c6,16d6,8b,16p"
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: song2
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 100%
+          red: 60%
+          green: 0%
+          blue: 100%
+          effect: "Cantina"
+      - rtttl.play:
+          rtttl: "Cantina:d=8,o=5,b=250:a,p,d6,p,a,p,d6,p,a,d6,p,a,p,g#,4a,a,g#,a,4g,f#,g,f#,4f.,d.,16p,4p.,a,p,d6,p,a,p,d6,p,a,d6,p,a,p,g#,a,p,g,p,4g.,f#,g,p,c6,4a#,4a,4g"
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: song3
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          effect: "Take On Me"
+      - rtttl.play:
+          rtttl: "TakeOnMe:d=4,o=5,b=160:8f#,8f#,8f#,8d,8p,8b4,8p,8e,8p,8e,8p,8e,8g#,8g#,8a,8b,8a,8a,8a,8e,8p,8d,8p,8f#,8p,8f#,8p,8f#,8e,8e,8f#,8e"
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: song4
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          red: 100%
+          green: 0%
+          blue: 0%
+          effect: "Imperial March"
+      - rtttl.play:
+          rtttl: "Imperial:d=4,o=5,b=100:e,e,e,8c,16p,16g,e,8c,16p,16g,e,p,b,b,b,8c6,16p,16g,d#,8c,16p,16g,e,8p"
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: song5
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 100%
+          effect: "Scatman"
+      - rtttl.play:
+          rtttl: "Scatman:d=16,o=5,b=200:8b,b,32p,8b,b,32p,8b,2d6,p,c#6.,p.,8d6,p,c#6,8b,p,8f#,2p.,c#6,8p,d6.,p.,c#6,b,8p,8f#,2p,32p,2d6,p,c#6,8p,d6.,p.,c#6,a.,p.,8e,2p.,c#6,8p,d6.,p.,c#6,b,8p,8b,b,32p,8b,b,32p,8b,2d6,p,c#6.,p.,8d6,p,c#6,8b,p,8f#,2p.,c#6,8p,d6.,p.,c#6,b,8p,8f#,2p,32p,2d6,p,c#6,8p,d6.,p.,c#6,a.,p.,8e,2p.,c#6,8p,d6.,p.,c#6,a,8p,8e,2p,32p,f#6.,p.,b.,p."
+      - delay: 500ms
+      - wait_until:
+          lambda: 'return !id(rtttl_buzzer).is_playing();'
+      - script.execute: startThermometer
+
+  - id: startThermometer
+    mode: restart
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          effect: "Thermometer"
+
+  - id: motionColor
+    mode: restart
+    then:
+      - lambda: |-
+          int color = id(motionColorIndex) % 7;
+          id(motionColorIndex)++;
+          auto call = id(rgb_module).turn_on();
+          call.set_brightness(0.5);
+          call.set_transition_length(0);
+          switch(color) {
+            case 0: call.set_rgb(1.0, 0.0, 0.0); break;   // Red
+            case 1: call.set_rgb(0.0, 1.0, 0.0); break;   // Green
+            case 2: call.set_rgb(0.0, 0.0, 1.0); break;   // Blue
+            case 3: call.set_rgb(1.0, 1.0, 0.0); break;   // Yellow
+            case 4: call.set_rgb(1.0, 0.0, 1.0); break;   // Purple
+            case 5: call.set_rgb(0.0, 1.0, 1.0); break;   // Cyan
+            case 6: call.set_rgb(1.0, 0.5, 0.0); break;   // Orange
+          }
+          call.perform();
+
+  - id: rainbowCircle
+    then:
+      - light.turn_on:
+          id: rgb_module
+          brightness: 50%
+          effect: "Rainbow Circle"
+
+  - id: statusCheck
+    then:
+      - if:
+          condition:
+            - lambda: 'return id(ink_ha_connected).state;'
+          then:
+            - logger.log: "Apollo Automation: Connected To HA"
+            - light.turn_on:
+                id: rgb_light
+                brightness: 100%
+                red: 0%
+                green: 0%
+                blue: 100%
+          else:
+            - if:
+                condition:
+                  - wifi.connected
+                then:
+                  - logger.log: "Apollo Automation: Connected To Wifi"
+                  - light.turn_on:
+                      id: rgb_light
+                      brightness: 100%
+                      red: 0%
+                      green: 100%
+                      blue: 0%
+                else:
+                  - logger.log: "Apollo Automation: Not Connected To Wifi"
+                  - light.turn_on:
+                      id: rgb_light
+                      brightness: 100%
+                      red: 100%
+                      green: 100%
+                      blue: 0%
+      - delay: 5s
+      - light.turn_off: rgb_light
+
   - id: reportAllValues
     then:
       - component.update: wifi_signal_db
       - component.update: sys_esp_temperature
       - component.update: sys_uptime
-      - component.update: sht30
+      # - component.update: sht30
+      - component.update: sht41
       - component.update: sen55
       - component.update: mics4514
       - component.update: bmi160_imu
-      - component.update: temp_probe
+      # - component.update: temp_probe
       - component.update: max_17048
