@@ -1,6 +1,6 @@
-# Apollo ESK-1 Starter Kit
+# ESPHome Starter Kit (ESK-1)
 
-![Apollo ESK-1](ESK-1PCB.png)
+![ESPHome Starter Kit](ESPHome-Starter-Kit.jpg)
 
 The ESK-1 is designed in collaboration with the **Open Home Foundation**. A portion of the profits from each ESK-1 sold goes directly to the OHF team to support their work on Home Assistant, ESPHome, Music Assistant, and other open-source smart home projects.
 
@@ -19,13 +19,6 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 **Battery Powered:** Includes battery connector with MAX17048 fuel gauge for accurate voltage and percentage monitoring.
 
 **Deep Sleep Support:** Configurable deep sleep duration for extended battery life. Wakes periodically to report sensor values and returns to sleep.
-
-**RGB Status LED:** Onboard fully addressable WS2812 LED indicates battery status:
-- Red: Battery below 40%
-- Yellow: Battery between 40-79%
-- Green: Battery 80% or above
-
-**Prevent Sleep Toggle:** Easily disable deep sleep via Home Assistant for OTA updates or continuous monitoring.
 
 **Accessory Power Control:** GPIO-controlled power rail for connected accessories, automatically disabled during deep sleep to conserve battery.
 
@@ -56,6 +49,8 @@ The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrat
 
 ## Links
 
+Buy the Starter Kit: [ESPHome Starter Kit on the Apollo shop](https://apolloautomation.com/products/esk-1-esphome-starter-kit)
+Wiki (start here): [ESPHome Starter Kit setup guide](https://wiki.apolloautomation.com/products/ESPHome-Starter-Kit/start-here/)
 Discord (Support/feedback/discussion/future products): [http://dsc.gg/ApolloAutomation](http://dsc.gg/ApolloAutomation)
 Shop: [https://apolloautomation.com](https://apolloautomation.com)
 Wiki: [https://wiki.apolloautomation.com](https://wiki.apolloautomation.com)
