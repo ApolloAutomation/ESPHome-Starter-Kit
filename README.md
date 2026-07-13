@@ -34,10 +34,15 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 
 | Function | GPIO |
 |----------|------|
-| I2C SDA | GPIO21 |
-| I2C SCL | GPIO20 |
-| RGB LED | GPIO5 |
-| Accessory Power | GPIO4 |
+| I2C SCL | GPIO0 |
+| I2C SDA | GPIO1 |
+| Motion module input (PIR) | GPIO3 |
+| Accessory power (FPC rail control) | GPIO4 |
+| Onboard RGB LED (WS2812) | GPIO5 |
+| Button module input | GPIO6 |
+| LED & Buzzer module LEDs (WS2812) | GPIO14 |
+| LED & Buzzer module buzzer | GPIO18 |
+| Boot button | GPIO9 |
 
 ## ESPHome Integration
 
@@ -49,9 +54,8 @@ The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrat
 
 ## Links
 
-Buy the Starter Kit: [ESPHome Starter Kit on the Apollo shop](https://apolloautomation.com/products/esk-1-esphome-starter-kit)
-Wiki (start here): [ESPHome Starter Kit setup guide](https://wiki.apolloautomation.com/products/ESPHome-Starter-Kit/start-here/)
-Discord (Support/feedback/discussion/future products): [http://dsc.gg/ApolloAutomation](http://dsc.gg/ApolloAutomation)
-Shop: [https://apolloautomation.com](https://apolloautomation.com)
-Wiki: [https://wiki.apolloautomation.com](https://wiki.apolloautomation.com)
-Open Home Foundation: [https://www.openhomefoundation.org](https://www.openhomefoundation.org)
+- **Product page:** [ESPHome Starter Kit on the Apollo shop](https://apolloautomation.com/products/esk-1-esphome-starter-kit)
+- **Wiki (start here):** [ESPHome Starter Kit setup guide](https://wiki.apolloautomation.com/products/ESPHome-Starter-Kit/start-here/)
+- **Forum:** [forum.apolloautomation.com](https://forum.apolloautomation.com/)
+- **Discord** (support, feedback, discussion, future products): [dsc.gg/ApolloAutomation](http://dsc.gg/ApolloAutomation)
+- **Open Home Foundation:** [openhomefoundation.org](https://www.openhomefoundation.org)
