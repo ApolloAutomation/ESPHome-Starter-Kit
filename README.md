@@ -44,6 +44,19 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 | LED & Buzzer module buzzer | GPIO18 |
 | Boot button | GPIO9 |
 
+### Breakout Module (optional add-on)
+
+The [Breakout Module](https://wiki.apolloautomation.com/products/ESPHome-Starter-Kit/modules/apollo-breakout-module/) re-exposes the board's I2C bus and a shared GPIO across several connector types. It does not add new GPIOs.
+
+| Connector | Signals |
+|-----------|---------|
+| I2C ports (3.5mm jack, STEMMA QT 3.3V, STEMMA 5V, Grove, SEN6x) | SCL = GPIO0, SDA = GPIO1 |
+| 1-Wire port | Data = GPIO6 |
+| 3-pin STEMMA (5V) | GPIO6 (shared with 1-Wire), 5V, GND |
+| 2x6 GPIO header | GPIO0 (SCL), GPIO1 (SDA), GPIO6, UART TX, UART RX, 3.3V, 5V, GND |
+
+> **Note:** GPIO6 is shared between the 1-Wire port, the 3-pin STEMMA connector, and the GPIO header, so only one can be used at a time.
+
 ## ESPHome Integration
 
 The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrations/ESPHome/` folder for the YAML configuration.
