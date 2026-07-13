@@ -50,6 +50,10 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 
 The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrations/ESPHome/` folder for the YAML configuration.
 
+## Hardware Files
+
+3D models of the boards are in [`hardware/`](hardware/) for designing your own cases and mounts. Built something? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Links
 
 Discord (Support/feedback/discussion/future products): [http://dsc.gg/ApolloAutomation](http://dsc.gg/ApolloAutomation)
