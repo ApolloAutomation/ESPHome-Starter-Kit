@@ -22,6 +22,17 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 
 **Accessory Power Control:** GPIO-controlled power rail for connected accessories, automatically disabled during deep sleep to conserve battery.
 
+## Specifications
+
+| | |
+|---|---|
+| MCU | ESP32-C6-MINI-1 |
+| Flash | 8 MB |
+| Radios | Wi-Fi, Bluetooth, Zigbee, Thread |
+| Framework | ESP-IDF (board `esp32-c6-devkitm-1`, variant `esp32c6`) |
+| Power | USB-C, plus LiPo battery connector with MAX17048 fuel gauge |
+| Expansion | Two 13-pin FPC ports with switchable accessory power rail |
+
 ## What's in the Kit
 
 - **ESK-1 Main Board** - ESP32-C6 with dual FPC expansion ports
@@ -60,6 +71,10 @@ The [Breakout Module](https://wiki.apolloautomation.com/products/ESPHome-Starter
 ## ESPHome Integration
 
 The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrations/ESPHome/` folder for the YAML configuration.
+
+### ESPHome Device Builder
+
+The ESK-1 is an officially featured board in the [ESPHome Device Builder](https://github.com/esphome/device-builder). The easiest way to install firmware is straight from the Device Builder in your ESPHome dashboard — no default YAML to flash manually. You can see the board definition [here](https://github.com/esphome/device-builder/tree/main/esphome_device_builder/definitions/boards/apollo-esk-1).
 
 ## Hardware Files
 
