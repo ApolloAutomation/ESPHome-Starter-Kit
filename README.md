@@ -1,8 +1,8 @@
-# ESPHome Starter Kit (ESK-1)
+# Official ESPHome Starter Kit
 
 ![ESPHome Starter Kit](ESPHome-Starter-Kit.jpg)
 
-The ESK-1 is designed in collaboration with the **Open Home Foundation**. A portion of the profits from each ESK-1 sold goes directly to the OHF team to support their work on Home Assistant, ESPHome, Music Assistant, and other open-source smart home projects.
+The ESPHome Starter Kit is designed in collaboration with the **Open Home Foundation**. A portion of the profits from each sold goes directly to the OHF team to support their work on Home Assistant, ESPHome, Music Assistant, and other open-source smart home projects.
 
 ## Key Features
 
@@ -35,7 +35,7 @@ The ESK-1 is designed in collaboration with the **Open Home Foundation**. A port
 
 ## What's in the Kit
 
-- **ESK-1 Main Board** - ESP32-C6 with dual FPC expansion ports
+- **ESPHome C6 Board** - ESP32-C6 with dual FPC expansion ports
 - **PIR Sensor** - Motion detection
 - **Temperature/Humidity Sensor** - Environmental monitoring
 - **Notification Puck** - LED and piezo buzzer PCB for visual and audio alerts
@@ -70,11 +70,11 @@ The [Breakout Module](https://wiki.apolloautomation.com/products/ESPHome-Starter
 
 ## ESPHome Integration
 
-The ESK-1 is designed for use with ESPHome and Home Assistant. See the `Integrations/ESPHome/` folder for the YAML configuration.
+The starter kit is designed for use with ESPHome and Home Assistant. See the `Integrations/ESPHome/` folder for the YAML configuration.
 
 ### ESPHome Device Builder
 
-The ESK-1 is an officially featured board in the [ESPHome Device Builder](https://github.com/esphome/device-builder). The easiest way to install firmware is straight from the Device Builder in your ESPHome dashboard — no default YAML to flash manually. You can see the board definition [here](https://github.com/esphome/device-builder/tree/main/esphome_device_builder/definitions/boards/apollo-esk-1).
+The starter kit is an officially featured board in the [ESPHome Device Builder](https://github.com/esphome/device-builder). The easiest way to install firmware is straight from the Device Builder in your ESPHome dashboard — no default YAML to flash manually. You can see the board definition [here](https://github.com/esphome/device-builder/tree/main/esphome_device_builder/definitions/boards/apollo-esk-1).
 
 ## Hardware Files
 

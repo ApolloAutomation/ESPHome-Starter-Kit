@@ -37,7 +37,6 @@ esphome:
                   id(deep_sleep_1).prevent_deep_sleep();
 
 esp32:
-  board: esp32-c6-devkitm-1
   variant: esp32c6
   flash_size: 8MB
   framework:
@@ -104,12 +103,20 @@ logger:
 captive_portal:
 
 i2c:
-  #- id: i2c_bus_1
-  #  sda: GPIO21
-  #  scl: GPIO20
-  - id: i2c_bus_2
+  - id: i2c_bus
     sda: GPIO1
     scl: GPIO0
+
+#########
+######### DS18b20 Probe Start
+#########
+one_wire:
+  - platform: gpio
+    pin: GPIO6
+#########
+######### DS18b20 Probe End
+#########
+
 
 
 deep_sleep:
@@ -180,18 +187,18 @@ binary_sensor:
 ######### Button Module Start
 #########
 
-  -   platform: gpio
-      id: button_1
-      name: "Button 1"
-      pin:
-        number: GPIO6
-        mode:
-          input: true
-          pullup: true
-        inverted: true
-      on_press:
-        then:
-          - logger.log: "Button 1 pressed"
+##  -   platform: gpio
+##      id: button_1
+##      name: "Button 1"
+##      pin:
+##        number: GPIO6
+##        mode:
+##          input: true
+##          pullup: true
+##        inverted: true
+##      on_press:
+##        then:
+##          - logger.log: "Button 1 pressed"
 
 #########
 ######### Button Module End
@@ -213,6 +220,28 @@ sensor:
     id: wifi_signal_db
     update_interval: 60s
     entity_category: "diagnostic"
+
+  - platform: sht4x
+    id: sht41
+    temperature:
+      name: "SHT41 Temperature"
+      id: sht41_temperature
+    humidity:
+      name: "SHT41 Relative Humidity"
+      id: sht41_humidity
+    update_interval: 60s
+
+#########
+######### DS18b20 Probe Start
+#########
+  - platform: dallas_temp
+    name: "Temperature Probe"
+    update_interval: 60s
+    id: temp_probe
+    index: 0
+#########
+######### DS18b20 Probe End
+#########
 
 #########
 ######### AHT Module Start
@@ -276,7 +305,6 @@ switch:
     id: accessory_power
     restore_mode: ALWAYS_ON
     setup_priority: 2000
-
     internal: true
 
 button:
