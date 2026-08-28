@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-esk-1
-  version: "25.1.29.1"
+  version: "26.8.27.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
