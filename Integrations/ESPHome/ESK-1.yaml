@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-esk-1
-  version: "25.1.29.1"
+  version: "26.8.27.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -15,7 +15,7 @@ esphome:
     name: "ApolloAutomation.ESK-1"
     version: "${version}"
 
-  min_version: 2023.11.1
+  min_version: 2026.8.0
 
   on_shutdown:
     - light.turn_off: rgb_light
@@ -222,7 +222,7 @@ light:
     chipset: WS2812
     num_leds: 1
     rmt_symbols: 48
-    rgb_order: grb
+    channel_colors: GRB
 
 script:
   - id: reportAllValues
