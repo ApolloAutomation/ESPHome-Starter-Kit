@@ -1,0 +1,7 @@
+# Treat 3D/CAD assets as binary so git never rewrites line endings
+*.step binary
+*.stp  binary
+*.stl  binary
+*.f3d  binary
+*.3mf  binary
+*.png  binary
